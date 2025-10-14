@@ -1,0 +1,24 @@
+body {
+  font-family: "Segoe UI", sans-serif;
+  background-color: #f8f9fa;
+  color: #333;
+}
+
+h1, h2, h3 {
+  color: #0056b3;
+  background-color: #e6f0ff;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+code {
+  background-color: #f2f2f2;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+.MathJax_Display {
+  background-color: #eef3f9;
+  padding: 0.5em;
+  border-radius: 6px;
+}
