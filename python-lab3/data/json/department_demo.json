@@ -1,0 +1,41 @@
+{
+  "name": "Разработка",
+  "employees": [
+    {
+      "type": "Employee",
+      "id": 1,
+      "name": "Анна",
+      "department": "IT",
+      "base_salary": 50000.0
+    },
+    {
+      "type": "Manager",
+      "id": 2,
+      "name": "Борис",
+      "department": "MANAGEMENT",
+      "base_salary": 70000.0,
+      "bonus": 20000.0
+    },
+    {
+      "type": "Developer",
+      "id": 3,
+      "name": "Виктор",
+      "department": "DEV",
+      "base_salary": 50000.0,
+      "tech_stack": [
+        "Python",
+        "Java"
+      ],
+      "seniority_level": "senior"
+    },
+    {
+      "type": "Salesperson",
+      "id": 4,
+      "name": "Галина",
+      "department": "SALES",
+      "base_salary": 40000.0,
+      "commission_rate": 0.1,
+      "sales_volume": 80000.0
+    }
+  ]
+}

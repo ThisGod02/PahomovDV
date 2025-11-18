@@ -1,0 +1,117 @@
+{
+  "name": "TechInnovations",
+  "departments": [
+    {
+      "name": "Development",
+      "employees": [
+        {
+          "type": "Manager",
+          "id": 1,
+          "name": "Алиса Джонсон",
+          "department": "DEV",
+          "base_salary": 70000.0,
+          "bonus": 20000.0
+        },
+        {
+          "type": "Developer",
+          "id": 2,
+          "name": "Боб Смит",
+          "department": "DEV",
+          "base_salary": 50000.0,
+          "tech_stack": [
+            "Python",
+            "SQL",
+            "Docker"
+          ],
+          "seniority_level": "senior"
+        }
+      ]
+    },
+    {
+      "name": "Sales",
+      "employees": [
+        {
+          "type": "Salesperson",
+          "id": 3,
+          "name": "Чарли Браун",
+          "department": "SAL",
+          "base_salary": 40000.0,
+          "commission_rate": 0.15,
+          "sales_volume": 50000.0
+        }
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "project_id": 101,
+      "name": "AI Platform",
+      "description": "Разработка AI системы",
+      "deadline": "2024-12-31",
+      "status": "active",
+      "team": [
+        {
+          "type": "Developer",
+          "id": 2,
+          "name": "Боб Смит",
+          "department": "DEV",
+          "base_salary": 50000.0,
+          "tech_stack": [
+            "Python",
+            "SQL",
+            "Docker"
+          ],
+          "seniority_level": "senior"
+        },
+        {
+          "type": "Manager",
+          "id": 1,
+          "name": "Алиса Джонсон",
+          "department": "DEV",
+          "base_salary": 70000.0,
+          "bonus": 20000.0
+        }
+      ]
+    },
+    {
+      "project_id": 102,
+      "name": "Web Portal",
+      "description": "Создание веб-портала",
+      "deadline": "2024-09-30",
+      "status": "planning",
+      "team": [
+        {
+          "type": "Developer",
+          "id": 2,
+          "name": "Боб Смит",
+          "department": "DEV",
+          "base_salary": 50000.0,
+          "tech_stack": [
+            "Python",
+            "SQL",
+            "Docker"
+          ],
+          "seniority_level": "senior"
+        }
+      ]
+    },
+    {
+      "project_id": 103,
+      "name": "Marketing Campaign",
+      "description": "Маркетинговая кампания",
+      "deadline": "2024-11-30",
+      "status": "planning",
+      "team": [
+        {
+          "type": "Salesperson",
+          "id": 3,
+          "name": "Чарли Браун",
+          "department": "SAL",
+          "base_salary": 40000.0,
+          "commission_rate": 0.15,
+          "sales_volume": 50000.0
+        }
+      ]
+    }
+  ]
+}

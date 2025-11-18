@@ -23,7 +23,7 @@ while(erors < 3){
     cat("Введите радиус круга: \n")
     circle_radius <- as.numeric(readline())
     circle_area <- pi * circle_radius * circle_radius
-    cat("ПЛощадь круга: ", circle_area)
+    cat("ПЛощадь круга: ", circle_area, "\n")
   }
   else if(vvod == "квадрат"){
     cat("Длина стороны квадрата: \n")
