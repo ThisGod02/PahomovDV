@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript FP Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .output {
+            background: #f9f9f9;
+            padding: 10px;
+            border-left: 4px solid #4CAF50;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Лабораторная работа 6: Функциональное программирование в JavaScript</h1>
+    
+    <div class="section">
+        <h2>1. Методы массивов</h2>
+        <div id="array-methods-output" class="output"></div>
+        <button onclick="demoArrayMethods()">Демонстрация</button>
+    </div>
+
+    <div class="section">
+        <h2>2. Функции и замыкания</h2>
+        <div id="functions-output" class="output"></div>
+        <button onclick="demoFunctions()">Демонстрация</button>
+    </div>
+
+    <div class="section">
+        <h2>3. Иммутабельность</h2>
+        <div id="immutability-output" class="output"></div>
+        <button onclick="demoImmutability()">Демонстрация</button>
+    </div>
+
+    <div class="section">
+        <h2>4. Практическое задание: Обработка пользователей</h2>
+        <div id="process-users-output" class="output"></div>
+        <button onclick="demoProcessUsers()">Демонстрация</button>
+    </div>
+
+    <div class="section">
+        <h2>5. Дебаунсинг</h2>
+        <input type="text" id="debounce-input" placeholder="Введите текст (с задержкой 500мс)">
+        <div id="debounce-output" class="output"></div>
+    </div>
+
+    <script type="module">
+        import { products, processUsers } from './array-methods.js';
+        import { createCounter, debounce } from './functions-closures.js';
+        import { user, cart } from './immutability.js';
+
+        // Сохраняем функции в глобальную область для использования в HTML
+        window.demoArrayMethods = () => {
+            const output = document.getElementById('array-methods-output');
+            let result = '';
+
+            // Map
+            const productNames = products.map(p => p.name);
+            result += `Названия продуктов: ${productNames.join(', ')}\n\n`;
+
+            // Filter
+            const available = products.filter(p => p.inStock);
+            result += `Доступные продукты: ${available.map(p => p.name).join(', ')}\n\n`;
+
+            // Reduce
+            const total = products.reduce((sum, p) => sum + p.price, 0);
+            result += `Общая стоимость: $${total}\n\n`;
+
+            // Цепочка методов
+            const chainResult = products
+                .filter(p => p.inStock)
+                .map(p => p.price)
+                .reduce((sum, price) => sum + price, 0);
+            result += `Сумма доступных продуктов: $${chainResult}`;
+
+            output.textContent = result;
+        };
+
+        window.demoFunctions = () => {
+            const output = document.getElementById('functions-output');
+            let result = '';
+
+            const counter = createCounter();
+            result += `Счетчик: ${counter.increment()}\n`;
+            result += `Счетчик: ${counter.increment()}\n`;
+            result += `Текущее значение: ${counter.getCount()}\n\n`;
+
+            // Каррирование
+            const multiply = a => b => a * b;
+            const double = multiply(2);
+            result += `Double 5: ${double(5)}\n`;
+            result += `Double 10: ${double(10)}`;
+
+            output.textContent = result;
+        };
+
+        window.demoImmutability = () => {
+            const output = document.getElementById('immutability-output');
+            let result = '';
+
+            result += `Исходный пользователь: ${JSON.stringify(user, null, 2)}\n\n`;
+
+            const updatedUser = {
+                ...user,
+                name: 'Jane Doe',
+                preferences: {
+                    ...user.preferences,
+                    theme: 'light'
+                }
+            };
+
+            result += `Обновленный пользователь: ${JSON.stringify(updatedUser, null, 2)}\n\n`;
+            result += `Исходный пользователь не изменился: ${user.name}`;
+
+            output.textContent = result;
+        };
+
+        window.demoProcessUsers = () => {
+            const output = document.getElementById('process-users-output');
+            
+            const users = [
+                { name: 'John', age: 25, city: 'New York', active: true, email: 'john@example.com' },
+                { name: 'Jane', age: 30, city: 'Boston', active: false, email: 'jane@example.com' },
+                { name: 'Bob', age: 35, city: 'New York', active: true, email: 'bob@example.com' },
+                { name: 'Alice', age: 28, city: 'Boston', active: true, email: 'alice@example.com' }
+            ];
+
+            const processed = processUsers(users);
+            output.textContent = JSON.stringify(processed, null, 2);
+        };
+
+        // Дебаунсинг для input
+        const debounceInput = document.getElementById('debounce-input');
+        const debounceOutput = document.getElementById('debounce-output');
+
+        const debouncedLog = debounce((value) => {
+            debounceOutput.textContent = `Введено (после задержки): ${value}`;
+        }, 500);
+
+        debounceInput.addEventListener('input', (e) => {
+            debouncedLog(e.target.value);
+        });
+
+        // Автоматический запуск демонстраций при загрузке
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('JavaScript FP Demo загружен');
+        });
+    </script>
+</body>
+</html>
+

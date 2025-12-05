@@ -1,0 +1,127 @@
+#[derive(Debug, Clone)]
+pub struct Product {
+    pub id: u32,
+    pub name: String,
+    pub price: f64,
+    pub category: String,
+    pub in_stock: bool,
+}
+
+impl Product {
+    pub fn new(id: u32, name: &str, price: f64, category: &str, in_stock: bool) -> Self {
+        Product {
+            id,
+            name: name.to_string(),
+            price,
+            category: category.to_string(),
+            in_stock,
+        }
+    }
+}
+
+pub fn demonstrate_iterators() {
+    println!("\n=== Итераторы и замыкания ===");
+    
+    let products = vec![
+        Product::new(1, "iPhone", 999.99, "electronics", true),
+        Product::new(2, "MacBook", 1999.99, "electronics", false),
+        Product::new(3, "T-shirt", 29.99, "clothing", true),
+        Product::new(4, "Jeans", 79.99, "clothing", true),
+        Product::new(5, "Book", 15.99, "education", false),
+    ];
+    
+    let numbers = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    
+    // Map
+    let product_names: Vec<String> = products.iter().map(|p| p.name.clone()).collect();
+    println!("Названия продуктов: {:?}", product_names);
+    
+    // Filter
+    let available_products: Vec<&Product> = products.iter().filter(|p| p.in_stock).collect();
+    println!("Доступные продукты: {:?}", available_products);
+    
+    // Fold (аналог reduce)
+    let total_price: f64 = products.iter().map(|p| p.price).fold(0.0, |acc, price| acc + price);
+    println!("Общая стоимость: {:.2}", total_price);
+    
+    // Цепочка преобразований
+    let expensive_available: Vec<String> = products
+        .iter()
+        .filter(|p| p.in_stock && p.price > 50.0)
+        .map(|p| p.name.to_uppercase())
+        .collect();
+    println!("Дорогие доступные: {:?}", expensive_available);
+    
+    // Замыкания с захватом переменных
+    let min_price = 50.0;
+    let filtered_products: Vec<&Product> = products
+        .iter()
+        .filter(|p| p.price >= min_price) // Захват min_price
+        .collect();
+    println!("Продукты дороже {}: {:?}", min_price, filtered_products);
+    
+    // Ленивые итераторы
+    let squares: Vec<i32> = numbers
+        .iter()
+        .map(|x| {
+            println!("Вычисление квадрата для {}", x);
+            x * x
+        })
+        .take(3) // Без collect вычисления не выполняются
+        .collect();
+    println!("Квадраты первых 3 чисел: {:?}", squares);
+}
+
+// Функция, принимающая замыкание
+pub fn process_products<F>(products: &[Product], predicate: F) -> Vec<&Product>
+where
+    F: Fn(&Product) -> bool,
+{
+    products.iter().filter(|p| predicate(p)).collect()
+}
+
+// Практическое задание 1: Анализ продуктов
+pub fn analyze_products(products: &[Product]) -> (f64, usize, Vec<&Product>) {
+    // Средняя цена
+    let total_price: f64 = products.iter().map(|p| p.price).sum();
+    let average_price = if products.is_empty() {
+        0.0
+    } else {
+        total_price / products.len() as f64
+    };
+    
+    // Количество доступных
+    let available_count = products.iter().filter(|p| p.in_stock).count();
+    
+    // Дорогие продукты (> 100)
+    let expensive_products: Vec<&Product> = products
+        .iter()
+        .filter(|p| p.price > 100.0)
+        .collect();
+    
+    (average_price, available_count, expensive_products)
+}
+
+pub fn main() {
+    demonstrate_iterators();
+    
+    let products = vec![
+        Product::new(1, "iPhone", 999.99, "electronics", true),
+        Product::new(2, "MacBook", 1999.99, "electronics", false),
+        Product::new(3, "T-shirt", 29.99, "clothing", true),
+        Product::new(4, "Jeans", 79.99, "clothing", true),
+        Product::new(5, "Book", 15.99, "education", false),
+    ];
+    
+    // Использование функции с замыканием
+    let electronics = process_products(&products, |p| p.category == "electronics");
+    println!("Электроника: {:?}", electronics);
+    
+    // Демонстрация практического задания
+    println!("\n=== Анализ продуктов ===");
+    let (avg_price, available_count, expensive) = analyze_products(&products);
+    println!("Средняя цена: {:.2}", avg_price);
+    println!("Доступных продуктов: {}", available_count);
+    println!("Дорогих продуктов (>100): {:?}", expensive.iter().map(|p| &p.name).collect::<Vec<_>>());
+}
+
