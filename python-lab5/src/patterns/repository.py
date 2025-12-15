@@ -316,3 +316,4 @@ class ProjectRepository(IProjectRepository):
             raise ValueError(f"Проект с ID {project_id} не найден")
         del self._projects[project_id]
 
+

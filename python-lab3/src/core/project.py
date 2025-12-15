@@ -238,3 +238,4 @@ class Project:
         """Строковое представление проекта."""
         return f"Проект '{self.__name}' (ID: {self.__project_id}, статус: {self.__status})"
 
+

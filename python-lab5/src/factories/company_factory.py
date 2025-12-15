@@ -170,3 +170,4 @@ class SalesCompanyFactory(CompanyFactory):
         """Создать фабрику продавцов."""
         return SalespersonFactory()
 
+

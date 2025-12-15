@@ -69,3 +69,4 @@ console.log('User with new city:', userWithNewAddress);
 // Экспорт для использования в других модулях
 export { user, cart, deepUpdate };
 
+

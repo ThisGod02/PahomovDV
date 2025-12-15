@@ -209,3 +209,4 @@ class Employee(AbstractEmployee):
         return (f"Сотрудник [id: {self.__id}, имя: {self.__name}, "
                 f"отдел: {self.__department}, базовая зарплата: {self.__base_salary}]")
 
+

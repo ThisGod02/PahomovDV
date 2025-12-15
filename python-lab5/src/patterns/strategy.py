@@ -190,3 +190,4 @@ class BonusContext:
         else:
             return self._strategy.calculate_bonus(employee)
 
+

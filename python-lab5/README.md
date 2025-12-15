@@ -71,3 +71,4 @@ python examples/demo_patterns.py
 Пахомов Давид Вадимович
 Группа: ПИН-Б-О-24-2
 
+

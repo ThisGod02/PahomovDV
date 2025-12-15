@@ -137,3 +137,4 @@ class Developer(Employee):
             seniority_level=data.get("seniority_level", "junior")
         )
 
+

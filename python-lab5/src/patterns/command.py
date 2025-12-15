@@ -295,3 +295,4 @@ class CommandInvoker:
         self._history.clear()
         self._current_index = -1
 
+

@@ -119,3 +119,4 @@ class DatabaseConnection:
         self._connection = None
         DatabaseConnection._instance = None
 
+

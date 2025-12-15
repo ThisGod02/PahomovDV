@@ -301,3 +301,4 @@ class SpecificationRepository:
         """
         return [emp for emp in self._employees if spec.is_satisfied_by(emp)]
 
+

@@ -266,3 +266,4 @@ class Department:
         """
         return f"Отдел '{self.__name}' (сотрудников: {len(self.__employees)})"
 
+

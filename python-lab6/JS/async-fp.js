@@ -67,3 +67,4 @@ userRegistration(userData).then(result => {
 // Экспорт для использования в других модулях
 export { fetchData, processUserData, asyncPipe, userRegistration };
 
+

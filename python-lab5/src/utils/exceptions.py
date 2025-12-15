@@ -25,3 +25,4 @@ class DuplicateIdError(Exception):
     """Исключение при дублировании ID."""
     pass
 
+

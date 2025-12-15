@@ -198,3 +198,4 @@ class PerformanceDecorator(EmployeeDecorator):
         multiplier_percent = (self._performance_multiplier - 1) * 100
         return f"{base_info} [Производительность: {multiplier_percent:+.1f}%]"
 
+

@@ -64,3 +64,4 @@ const debouncedLog = debounce((message) => {
 // Экспорт для использования в других модулях
 export { createCounter, compose, pipe, debounce };
 
+

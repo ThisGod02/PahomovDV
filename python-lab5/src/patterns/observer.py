@@ -248,3 +248,4 @@ class ProjectObserver(Subject):
             "new_status": new_status
         })
 
+

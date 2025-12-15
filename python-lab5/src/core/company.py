@@ -430,3 +430,4 @@ class Company:
         return (f"Компания '{self.__name}' "
                 f"(отделов: {len(self.__departments)}, проектов: {len(self.__projects)})")
 
+

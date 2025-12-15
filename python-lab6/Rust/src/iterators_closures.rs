@@ -125,3 +125,4 @@ pub fn main() {
     println!("Дорогих продуктов (>100): {:?}", expensive.iter().map(|p| &p.name).collect::<Vec<_>>());
 }
 
+

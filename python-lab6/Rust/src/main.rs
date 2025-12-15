@@ -52,3 +52,4 @@ fn main() {
     println!("  Дорогих (>100): {}", expensive.len());
 }
 
+

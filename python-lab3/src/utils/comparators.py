@@ -65,3 +65,4 @@ def compare_by_department_and_name(emp1: AbstractEmployee, emp2: AbstractEmploye
     # Если отделы равны, сравниваем по имени
     return compare_by_name(emp1, emp2)
 
+

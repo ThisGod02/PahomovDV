@@ -71,3 +71,4 @@ class EmployeeFactory:
                 f"Доступные типы: employee, manager, developer, salesperson"
             )
 
+

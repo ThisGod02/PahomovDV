@@ -114,3 +114,4 @@ class SalaryCalculatorAdapter:
         
         return data
 
+

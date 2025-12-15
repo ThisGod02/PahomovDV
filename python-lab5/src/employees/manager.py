@@ -92,3 +92,4 @@ class Manager(Employee):
             bonus=data.get("bonus", 0)
         )
 
+

@@ -196,3 +196,4 @@ class CompanyFacade:
         departments = self._company.get_departments()
         return next((d for d in departments if d.name == name), None)
 
+
