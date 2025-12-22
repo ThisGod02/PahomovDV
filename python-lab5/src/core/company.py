@@ -431,3 +431,6 @@ class Company:
                 f"(отделов: {len(self.__departments)}, проектов: {len(self.__projects)})")
 
 
+
+
+

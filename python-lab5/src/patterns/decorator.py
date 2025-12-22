@@ -199,3 +199,6 @@ class PerformanceDecorator(EmployeeDecorator):
         return f"{base_info} [Производительность: {multiplier_percent:+.1f}%]"
 
 
+
+
+

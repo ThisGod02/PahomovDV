@@ -210,3 +210,6 @@ class Employee(AbstractEmployee):
                 f"отдел: {self.__department}, базовая зарплата: {self.__base_salary}]")
 
 
+
+
+

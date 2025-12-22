@@ -72,3 +72,6 @@ python examples/demo_patterns.py
 Группа: ПИН-Б-О-24-2
 
 
+
+
+

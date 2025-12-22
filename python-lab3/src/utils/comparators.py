@@ -66,3 +66,6 @@ def compare_by_department_and_name(emp1: AbstractEmployee, emp2: AbstractEmploye
     return compare_by_name(emp1, emp2)
 
 
+
+
+

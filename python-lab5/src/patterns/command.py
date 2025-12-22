@@ -296,3 +296,6 @@ class CommandInvoker:
         self._current_index = -1
 
 
+
+
+

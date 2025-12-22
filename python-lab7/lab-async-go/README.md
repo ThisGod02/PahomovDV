@@ -57,3 +57,6 @@ go test -cover ./...
 - Многопоточный сервер с graceful shutdown
 - Эндпоинты: `/`, `/health`, `/stats`
 
+
+
+
