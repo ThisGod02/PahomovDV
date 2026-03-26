@@ -1,0 +1,3 @@
+# **Лабораторная работа 12. Часть 1: Нативная Android-разработка с Jetpack Compose**
+(Содержимое из lab1201-Jetpack Compose.md)
+...
