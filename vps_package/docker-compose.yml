@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  # Lab 12.1: Android APK Builder and Server
+  lab-android-builder:
+    build:
+      context: ./lab-12.1-android
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    container_name: lab-android-service
+
+  # Lab 12.2: React Native Web App
+  lab-react-native-web:
+    build:
+      context: ./lab-12.2-web
+      dockerfile: Dockerfile
+    ports:
+      - "8081:80"
+    restart: unless-stopped
+    container_name: lab-web-service

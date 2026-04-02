@@ -1,0 +1,71 @@
+import * as SQLite from 'expo-sqlite';
+import { GeoNote } from '../types';
+
+const db = SQLite.openDatabase('geonotes.db');
+
+export const initDatabase = (): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        db.transaction(tx => {
+            tx.executeSql(
+                `CREATE TABLE IF NOT EXISTS notes (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    title TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    latitude REAL NOT NULL,
+                    longitude REAL NOT NULL,
+                    address TEXT,
+                    photoUri TEXT,
+                    createdAt INTEGER NOT NULL
+                );`,
+                [],
+                () => resolve(),
+                (_, error) => { reject(error); return false; }
+            );
+        });
+    });
+};
+
+export const getNotes = (): Promise<GeoNote[]> => {
+    return new Promise((resolve, reject) => {
+        db.transaction(tx => {
+            tx.executeSql(
+                'SELECT * FROM notes ORDER BY createdAt DESC',
+                [],
+                (_, { rows }) => {
+                    const notes: GeoNote[] = [];
+                    for (let i = 0; i < rows.length; i++) {
+                        notes.push(rows.item(i));
+                    }
+                    resolve(notes);
+                },
+                (_, error) => { reject(error); return false; }
+            );
+        });
+    });
+};
+
+export const addNote = (note: GeoNote): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        db.transaction(tx => {
+            tx.executeSql(
+                'INSERT INTO notes (id, title, content, latitude, longitude, address, photoUri, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                [note.id, note.title, note.content, note.latitude, note.longitude, note.address || null, note.photoUri || null, note.createdAt],
+                () => resolve(),
+                (_, error) => { reject(error); return false; }
+            );
+        });
+    });
+};
+
+export const deleteNote = (id: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        db.transaction(tx => {
+            tx.executeSql(
+                'DELETE FROM notes WHERE id = ?',
+                [id],
+                () => resolve(),
+                (_, error) => { reject(error); return false; }
+            );
+        });
+    });
+};
