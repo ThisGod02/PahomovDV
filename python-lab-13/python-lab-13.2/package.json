@@ -1,0 +1,20 @@
+{
+  "name": "lab-13-2-sca-owasp",
+  "version": "1.0.0",
+  "description": "Lab 13.2: SCA, OWASP ZAP, XSS demonstration",
+  "main": "vulnerable_app.js",
+  "scripts": {
+    "start:vulnerable": "node vulnerable_app.js",
+    "start:secure": "node start_secure.js",
+    "audit": "npm audit",
+    "audit:fix": "npm audit fix",
+    "test": "node test_runner.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {}
+}

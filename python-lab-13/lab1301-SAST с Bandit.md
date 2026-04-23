@@ -62,7 +62,7 @@ def init_db():
     conn.close()
 
 # Глобальный API ключ (hardcoded — это уязвимость!)
-API_KEY = "sk_test_REPLACED"
+API_KEY = "demo_training_key_example"
 
 # HTML шаблон для главной страницы
 HTML_TEMPLATE = """

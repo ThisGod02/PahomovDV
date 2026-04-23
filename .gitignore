@@ -1,0 +1,10 @@
+/python-lab-13/python-lab-13.1/__pycache__/
+/python-lab-13/python-lab-13.1/.pytest_cache/
+/python-lab-13/python-lab-13.1/*.pyc
+/python-lab-13/python-lab-13.1/users.db
+/python-lab-13/python-lab-13.1/bandit_before.html
+/python-lab-13/python-lab-13.1/bandit_before.json
+/python-lab-13/python-lab-13.1/bandit_after.html
+/python-lab-13/python-lab-13.1/bandit_after.json
+/python-lab-13/python-lab-13.2/node_modules/
+/python-lab-13/python-lab-13.2/comments.db

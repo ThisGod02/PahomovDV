@@ -1,0 +1,12 @@
+[bandit]
+# Уровень серьёзности: LOW, MEDIUM, HIGH
+# Уровень уверенности: LOW, MEDIUM, HIGH
+
+# Исключить тестовые директории
+exclude_dirs = [venv, .venv, tests, __pycache__]
+
+# Пропустить только B105 (hardcoded_password_string) для демонстрации
+# skips = B105
+
+# Порог для CI: блокировать при MEDIUM и выше
+# severity_level = MEDIUM
