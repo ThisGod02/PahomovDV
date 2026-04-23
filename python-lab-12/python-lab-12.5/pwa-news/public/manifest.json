@@ -1,0 +1,22 @@
+{
+    "name": "PWA Новости - прогрессивное новостное приложение",
+    "short_name": "PWA News",
+    "description": "Новостное приложение с поддержкой офлайн-режима и push-уведомлений",
+    "theme_color": "#0F172A",
+    "background_color": "#F8FAFC",
+    "display": "standalone",
+    "scope": "/",
+    "start_url": "/",
+    "orientation": "portrait-primary",
+    "lang": "ru",
+    "icons": [
+        { "src": "/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+        { "src": "/icons/icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    ],
+    "shortcuts": [
+        { "name": "Главные новости", "url": "/?category=general" },
+        { "name": "Технологии", "url": "/?category=technology" }
+    ],
+    "categories": ["news", "productivity"],
+    "prefer_related_applications": false
+}

@@ -1,0 +1,62 @@
+-- Таблица категорий
+CREATE TABLE category (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    color TEXT NOT NULL,
+    icon TEXT NOT NULL,
+    isDefault INTEGER AS Boolean DEFAULT 0
+);
+
+-- Таблица расходов
+CREATE TABLE expense (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    amount REAL NOT NULL,
+    categoryId INTEGER NOT NULL,
+    description TEXT,
+    date INTEGER NOT NULL,
+    isSynced INTEGER AS Boolean DEFAULT 0,
+    FOREIGN KEY(categoryId) REFERENCES category(id)
+);
+
+-- Таблица бюджетов
+CREATE TABLE budget (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    categoryId INTEGER NOT NULL UNIQUE,
+    amount REAL NOT NULL,
+    month INTEGER NOT NULL,
+    FOREIGN KEY(categoryId) REFERENCES category(id)
+);
+
+-- Запросы для category
+selectAll:
+SELECT * FROM category;
+
+insert:
+INSERT INTO category(name, color, icon, isDefault) VALUES (?, ?, ?, ?);
+
+-- Запросы для expense
+selectByDateRange:
+SELECT * FROM expense WHERE date >= :start AND date < :end ORDER BY date DESC;
+
+insert:
+INSERT INTO expense(amount, categoryId, description, date, isSynced)
+VALUES (?, ?, ?, ?, ?);
+
+deleteById:
+DELETE FROM expense WHERE id = ?;
+
+update:
+UPDATE expense SET amount = ?, categoryId = ?, description = ?, date = ?, isSynced = ?
+WHERE id = ?;
+
+-- Запросы для budget
+selectByMonth:
+SELECT * FROM budget WHERE month = ?;
+
+insert:
+INSERT OR REPLACE INTO budget(categoryId, amount, month) VALUES (?, ?, ?);
+
+update:
+UPDATE budget SET amount = ? WHERE id = ?;
+
+-- Начальные категории (вставка через onCreate)

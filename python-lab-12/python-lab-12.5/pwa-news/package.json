@@ -1,0 +1,14 @@
+{
+  "name": "pwa-news",
+  "version": "1.0.0",
+  "description": "Progressive Web App для новостей",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js",
+    "build": "echo 'Сборка статических файлов...'"
+  },
+  "keywords": ["pwa", "news", "service-worker"],
+  "author": "Пахомов Давид Вадимович",
+  "license": "ISC"
+}
