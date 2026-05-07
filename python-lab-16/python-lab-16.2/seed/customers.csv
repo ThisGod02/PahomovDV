@@ -1,0 +1,4 @@
+customer_id,full_name,email,phone,city,registration_date,status
+1,Anna Smirnova,anna@example.com,+7-999-123-45-67,Moscow,2024-01-05,Active
+2,Peter Ivanov,peter@example.com,+7-912-345-67-89,Saint Petersburg,2024-01-08,Active
+3,Maria Sidorova,maria@example.com,+7-921-678-90-12,Kazan,2024-01-10,VIP

@@ -1,0 +1,12 @@
+order_id,order_date,product_name,category,quantity,price_per_unit,customer_name,customer_city,payment_method
+1001,2024-01-15,Laptop,Electronics,1,75000,Anna Smirnova,Moscow,card
+1002,2024-01-15,Mouse,Electronics,2,1500,Anna Smirnova,Moscow,card
+1003,2024-01-16,SQL Book,Books,1,2500,Peter Ivanov,Saint Petersburg,cash
+1004,2024-01-16,,,1,1000,,,
+1005,2024-01-17,Keyboard,Electronics,-1,3000,Maria Sidorova,Kazan,card
+1006,2024-01-17,Mouse,Electronics,3,1500,Maria Sidorova,Kazan,card
+1007,2024-01-18,Python Book,Books,1,3500,Ivan Petrov,Moscow,card
+1008,2024-01-18,Laptop,Electronics,1,85000,Elena Kozlova,Novosibirsk,cash
+1009,2024-01-19,Monitor,Electronics,1,25000,Dmitry Sokolov,Yekaterinburg,card
+1010,2024-01-19,SQL Book,Books,2,2500,Olga Novikova,Moscow,cash
+1010,2024-01-19,SQL Book,Books,2,2500,Olga Novikova,Moscow,cash

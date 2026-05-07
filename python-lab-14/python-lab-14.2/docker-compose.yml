@@ -1,0 +1,16 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: lab14-mongo
+    ports:
+      - "27017:27017"
+
+  mongo-express:
+    image: mongo-express:1.0.2
+    container_name: lab14-mongo-express
+    depends_on:
+      - mongo
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/
+    ports:
+      - "8081:8081"

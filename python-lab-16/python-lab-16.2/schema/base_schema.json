@@ -1,0 +1,49 @@
+{
+  "tables": [
+    {
+      "name": "Customers",
+      "fields": [
+        {"name": "Customer Code", "type": "autoNumber"},
+        {"name": "Full Name", "type": "singleLineText", "required": true},
+        {"name": "Email", "type": "email", "required": true},
+        {"name": "Phone", "type": "phoneNumber"},
+        {"name": "City", "type": "singleLineText"},
+        {"name": "Registration Date", "type": "date"},
+        {"name": "Status", "type": "singleSelect"},
+        {"name": "Purchase Total", "type": "currency"}
+      ]
+    },
+    {
+      "name": "Products",
+      "fields": [
+        {"name": "SKU", "type": "autoNumber"},
+        {"name": "Name", "type": "singleLineText", "required": true},
+        {"name": "Category", "type": "singleSelect"},
+        {"name": "Price", "type": "currency"},
+        {"name": "Stock Quantity", "type": "number"}
+      ]
+    },
+    {
+      "name": "Orders",
+      "fields": [
+        {"name": "Order Number", "type": "autoNumber"},
+        {"name": "Customer", "type": "multipleRecordLinks"},
+        {"name": "Order Date", "type": "date"},
+        {"name": "Status", "type": "singleSelect"},
+        {"name": "Payment Method", "type": "multipleSelects"},
+        {"name": "Order Total", "type": "formula"}
+      ]
+    },
+    {
+      "name": "Order Items",
+      "fields": [
+        {"name": "Row ID", "type": "autoNumber"},
+        {"name": "Order", "type": "multipleRecordLinks"},
+        {"name": "Product", "type": "multipleRecordLinks"},
+        {"name": "Quantity", "type": "number"},
+        {"name": "Price At Order Time", "type": "lookup"},
+        {"name": "Line Total", "type": "formula"}
+      ]
+    }
+  ]
+}

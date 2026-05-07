@@ -1,0 +1,4 @@
+order_id,customer_id,order_date,status,payment_method,delivery_date
+1,1,2024-02-01,Delivered,Card,2024-02-05
+2,2,2024-02-02,Shipped,Online,2024-02-07
+3,3,2024-02-03,Processing,Cash,

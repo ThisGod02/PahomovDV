@@ -1,0 +1,5 @@
+service_account_key_file = "key.json"
+cloud_id                 = "your-cloud-id"
+folder_id                = "your-folder-id"
+zone                     = "ru-central1-a"
+registry_name            = "lab17-registry"

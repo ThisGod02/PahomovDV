@@ -8,3 +8,11 @@
 /python-lab-13/python-lab-13.1/bandit_after.json
 /python-lab-13/python-lab-13.2/node_modules/
 /python-lab-13/python-lab-13.2/comments.db
+/python-lab-14/python-lab-14.1/*.db
+/python-lab-15/python-lab-15.1/sales.db
+/python-lab-15/python-lab-15.1/reports/
+/python-lab-16/python-lab-16.1/generated/
+/python-lab-16/python-lab-16.2/exports/
+/python-lab-17/python-lab-17.1/backend/__pycache__/
+/python-lab-17/python-lab-17.1/backend/.pytest_cache/
+/python-lab-17/python-lab-17.1/frontend/.next/

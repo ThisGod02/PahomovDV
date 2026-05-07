@@ -1,0 +1,6 @@
+product_id,name,category,price,stock_quantity
+1,Laptop,Electronics,75000,10
+2,Mouse,Electronics,1500,50
+3,SQL Book,Books,2500,30
+4,Keyboard,Electronics,5000,15
+5,Monitor,Electronics,25000,5
